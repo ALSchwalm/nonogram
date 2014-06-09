@@ -26,15 +26,18 @@
 (defvar picross-rows 10)
 (defvar picross-columns 10)
 (defvar picross-errors 0)
+(defvar picross-max-erros 5)
 (defvar picross-pos-x -1)
 (defvar picross-pos-y -1)
+(defvar picross-points nil)
 
 (make-variable-buffer-local 'picross-rows)
 (make-variable-buffer-local 'picross-columns)
 (make-variable-buffer-local 'picross-errors)
 (make-variable-buffer-local 'picross-pos-x)
 (make-variable-buffer-local 'picross-pox-y)
-
+(make-variable-buffer-local 'picross-points)
+(make-variable-buffer-local 'picross-max-errors)
 
 (defun picross-draw-board ()
   "Draw the board on which the game will be played."
@@ -51,6 +54,31 @@
       (if (eq j 0)
           ()
         (insert "\n")))))
+
+(defun picross-generate-points (num-points)
+  "Fill the board with initial points.
+NUM-POINTS: the number of points on the board"
+  (let (point)
+    (while (>= (setq num-points (1- num-points)) 0)
+      (while
+          (progn
+            (setq point (cons (random 8) (random 8)))
+            (member point picross-points)))
+      (setq picross-points (cons point picross-points)))
+    picross-points))
+
+(defun picross-select ()
+  "Select the current location as a point."
+  (interactive)
+  (let ((point (cons picross-pos-x picross-pos-y))
+        (buffer-read-only nil))
+    (if (member point picross-points)
+        (progn (delete-char 1) (insert "0"))
+      (message "Incorrect")
+      (delete-char 1)
+      (insert "O")
+      (setq picross-errors (1+ picross-errors))))
+  (backward-char))
 
 (defun picross-right ()
   "Move picross cursor right."
@@ -106,6 +134,7 @@
   (switch-to-buffer "*picross*")
   (picross-mode)
   (picross-draw-board)
+  (picross-generate-points picross-columns)
   (setq picross-pos-x 1)
   (setq picross-pos-y 1)
   (with-no-warnings (beginning-of-buffer)))
@@ -125,7 +154,9 @@
   (define-key picross-mode-map "\C-p" 'picross-up)
   (define-key picross-mode-map "\C-n" 'picross-down)
   (define-key picross-mode-map "\C-e" 'picross-eol)
-  (define-key picross-mode-map "\C-a" 'picross-bol))
+  (define-key picross-mode-map "\C-a" 'picross-bol)
+  (define-key picross-mode-map " " 'picross-select)
+  (define-key picross-mode-map "q" 'bury-buffer))
 
 (define-derived-mode picross-mode special-mode "picross"
   "A mode for playing picross."
