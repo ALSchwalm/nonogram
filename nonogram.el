@@ -23,6 +23,8 @@
 
 ;;; Code:
 
+(require 'dash)
+
 (defvar nonogram-rows 10)
 (defvar nonogram-columns 10)
 (defvar nonogram-errors 0)
@@ -76,14 +78,36 @@ NUM-POINTS: the number of points on the board"
         (progn (delete-char 1) (insert "0"))
       (message "Incorrect")
       (delete-char 1)
-      (insert "O")
+      (insert "X")
       (setq nonogram-errors (1+ nonogram-errors))))
   (backward-char))
 
-(defun nonogram-generate-row-string (row-number)
+(defun nonogram-generate-hint (row-or-column number)
   "Generate a string representing the points on the given row.
-ROW-NUMBER: the row"
-  (let ()))
+ROW-OR-COLUMN: whether the hint should be build by row or column
+NUMBER: which row or column to use"
+  (let (filter-func value-func points values previous-value hints)
+    (setq filter-func (if (eq row-or-column 'column) 'car 'cdr))
+    (setq value-func (if (eq row-or-column 'column) 'cdr 'car))
+
+    (setq points (-filter (lambda (point)
+                            (= (funcall filter-func point) number))
+                          nonogram-points))
+
+    (setq values (sort (-map value-func points) '<))
+    (while values
+      (if (not previous-value)
+          (setq hints '(1))
+        (if (eq (car values) (1+ previous-value))
+            (setcar hints (1+ (car hints)))
+          (setq hints (cons 1 hints))))
+      (setq previous-value (car values))
+      (setq values (cdr values)))
+    (if (not hints)
+        ""
+      (if (eq (length hints) 1)
+          (number-to-string (car hints))
+        (--reduce (format "%s %s" acc it) hints)))))
 
 (defun nonogram-right ()
   "Move nonogram cursor right."
