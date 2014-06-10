@@ -46,8 +46,28 @@
   (erase-buffer)
   (let ((i nonogram-columns)
         (j nonogram-rows)
-        (buffer-read-only nil))
+        (buffer-read-only nil)
+        (column-hints ())
+        (row-hints ())
+        (max-row-hint 0)
+        (max-column-hint 0)
+        (row-strings nil))
+    (-dotimes nonogram-columns
+      (lambda (n) (setq column-hints (append column-hints
+                           (list (nonogram-generate-hint 'column (1+ n)))))))
+
+    (-dotimes nonogram-rows
+      (lambda (n) (setq row-hints (append row-hints
+                           (list (nonogram-generate-hint 'row (1+ n)))))))
+
+    (setq row-strings (--map (if (not it)
+                                 ""
+                               (format "%s" it)) row-hints))
+
+    (setq max-row-hint (--max-by (> (length it) (length other)) row-strings))
+
     (while (>= (setq j (1- j)) 0)
+      (insert (format (format "%%%ds" (length max-row-hint)) (nth j row-strings)))
       (while (>= (setq i (1- i)) 0)
         (if (eq i 0)
             (insert "-")
@@ -55,7 +75,8 @@
       (setq i nonogram-columns)
       (if (eq j 0)
           ()
-        (insert "\n")))))
+        (insert "\n")))
+    (list max-row-hint max-column-hint)))
 
 (defun nonogram-generate-points (num-points)
   "Fill the board with initial points.
@@ -64,7 +85,8 @@ NUM-POINTS: the number of points on the board"
     (while (>= (setq num-points (1- num-points)) 0)
       (while
           (progn
-            (setq point (cons (random 8) (random 8)))
+            (setq point (cons (random nonogram-columns)
+                              (random nonogram-rows)))
             (member point nonogram-points)))
       (setq nonogram-points (cons point nonogram-points)))
     nonogram-points))
@@ -86,9 +108,17 @@ NUM-POINTS: the number of points on the board"
   "Generate a string representing the points on the given row.
 ROW-OR-COLUMN: whether the hint should be build by row or column
 NUMBER: which row or column to use"
-  (let (filter-func value-func points values previous-value hints)
-    (setq filter-func (if (eq row-or-column 'column) 'car 'cdr))
-    (setq value-func (if (eq row-or-column 'column) 'cdr 'car))
+  (let ((filter-func nil)
+        (value-func nil)
+        (points nil)
+        (values nil)
+        (previous-value nil)
+        (hints nil))
+    (if (eq row-or-column 'column)
+        (setq filter-func 'car
+              value-func 'cdr)
+      (setq filter-func 'cdr
+            value-func 'car))
 
     (setq points (-filter (lambda (point)
                             (= (funcall filter-func point) number))
@@ -100,14 +130,10 @@ NUMBER: which row or column to use"
           (setq hints '(1))
         (if (eq (car values) (1+ previous-value))
             (setcar hints (1+ (car hints)))
-          (setq hints (cons 1 hints))))
+          (setq hints (append hints '(1)))))
       (setq previous-value (car values))
       (setq values (cdr values)))
-    (if (not hints)
-        ""
-      (if (eq (length hints) 1)
-          (number-to-string (car hints))
-        (--reduce (format "%s %s" acc it) hints)))))
+    hints))
 
 (defun nonogram-right ()
   "Move nonogram cursor right."
@@ -162,8 +188,8 @@ NUMBER: which row or column to use"
   "Initialize a buffer for nonogram play."
   (switch-to-buffer "*nonogram*")
   (nonogram-mode)
-  (nonogram-draw-board)
   (nonogram-generate-points nonogram-columns)
+  (nonogram-draw-board)
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
   (with-no-warnings (beginning-of-buffer)))
