@@ -43,6 +43,18 @@
 (make-variable-buffer-local 'nonogram-max-errors)
 (make-variable-buffer-local 'nonogram-start-pos)
 
+(defun nonogram-draw-column-hints ()
+  "Draw the hints for the current game."
+
+  (-dotimes (length max-column-hint)
+    (lambda (row)
+      (-dotimes nonogram-columns
+        (lambda (column)
+          (if (nth row (nth column column-hints))
+              (insert (concat (number-to-string (nth row
+                                                     (nth column column-hints))) " "))
+            (insert "  "))))
+      (next-line))))
 
 (defun nonogram-draw-board ()
   "Draw the board on which the game will be played."
@@ -69,12 +81,16 @@
                                  ""
                                (substring (format "%s" it) 1 -1)) row-hints))
 
-    (setq column-strings (--map (if (not it)
-                                 ""
-                               (substring (format "%s" it) 1 -1)) column-hints))
+
 
     (setq max-row-hint (--max-by (> (length it) (length other)) row-strings))
-    (setq max-column-hint (--max-by (> (length it) (length other)) column-strings))
+    (setq max-column-hint (--max-by (> (length it) (length other)) column-hints))
+
+    (--dotimes (length max-column-hint)
+      (insert (concat (make-string (length max-row-hint) ? ) "\n")))
+    (backward-char)
+    (previous-line (1- (length max-column-hint)))
+    (nonogram-draw-column-hints)
 
     (while (>= (setq j (1- j)) 0)
       (insert (format (format "%%%ds" (length max-row-hint))
@@ -96,8 +112,8 @@ NUM-POINTS: the number of points on the board"
     (while (>= (setq num-points (1- num-points)) 0)
       (while
           (progn
-            (setq point (cons (random nonogram-columns)
-                              (random nonogram-rows)))
+            (setq point (cons (1+ (random nonogram-columns))
+                              (1+ (random nonogram-rows))))
             (member point nonogram-points)))
       (setq nonogram-points (cons point nonogram-points)))
     nonogram-points))
@@ -204,12 +220,13 @@ NUMBER: which row or column to use"
   "Initialize a buffer for nonogram play."
   (switch-to-buffer "*nonogram*")
   (nonogram-mode)
-  (nonogram-generate-points nonogram-columns)
+  (nonogram-generate-points (* nonogram-columns 4))
   (setq nonogram-start-pos (nonogram-draw-board))
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
   (with-no-warnings (beginning-of-buffer))
-  (forward-char (car nonogram-start-pos)))
+  (forward-char (car nonogram-start-pos))
+  (next-line (cadr nonogram-start-pos)))
 
 (defun nonogram ()
   "Play a game of nonogram."
