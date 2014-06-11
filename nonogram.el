@@ -67,17 +67,18 @@
 
     (setq row-strings (--map (if (not it)
                                  ""
-                               (format "%s" it)) row-hints))
+                               (substring (format "%s" it) 1 -1)) row-hints))
 
     (setq column-strings (--map (if (not it)
                                  ""
-                               (format "%s" it)) column-hints))
+                               (substring (format "%s" it) 1 -1)) column-hints))
 
     (setq max-row-hint (--max-by (> (length it) (length other)) row-strings))
     (setq max-column-hint (--max-by (> (length it) (length other)) column-strings))
 
     (while (>= (setq j (1- j)) 0)
-      (insert (format (format "%%%ds" (length max-row-hint)) (nth j row-strings)))
+      (insert (format (format "%%%ds" (length max-row-hint))
+                      (nth j row-strings)))
       (while (>= (setq i (1- i)) 0)
         (if (eq i 0)
             (insert "-")
