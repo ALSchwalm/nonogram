@@ -31,6 +31,7 @@
 (defvar nonogram-max-erros 5)
 (defvar nonogram-pos-x -1)
 (defvar nonogram-pos-y -1)
+(defvar nonogram-start-pos '(-1 -1))
 (defvar nonogram-points nil)
 
 (make-variable-buffer-local 'nonogram-rows)
@@ -40,6 +41,8 @@
 (make-variable-buffer-local 'nonogram-pox-y)
 (make-variable-buffer-local 'nonogram-points)
 (make-variable-buffer-local 'nonogram-max-errors)
+(make-variable-buffer-local 'nonogram-start-pos)
+
 
 (defun nonogram-draw-board ()
   "Draw the board on which the game will be played."
@@ -51,20 +54,27 @@
         (row-hints ())
         (max-row-hint 0)
         (max-column-hint 0)
-        (row-strings nil))
+        (row-strings nil)
+        (column-strings nil))
+
     (-dotimes nonogram-columns
-      (lambda (n) (setq column-hints (append column-hints
-                           (list (nonogram-generate-hint 'column (1+ n)))))))
+      (lambda (n) (setq column-hints (cons (nonogram-generate-hint 'column (1+ n))
+                                      column-hints))))
 
     (-dotimes nonogram-rows
-      (lambda (n) (setq row-hints (append row-hints
-                           (list (nonogram-generate-hint 'row (1+ n)))))))
+      (lambda (n) (setq row-hints (cons (nonogram-generate-hint 'row (1+ n))
+                                        row-hints))))
 
     (setq row-strings (--map (if (not it)
                                  ""
                                (format "%s" it)) row-hints))
 
+    (setq column-strings (--map (if (not it)
+                                 ""
+                               (format "%s" it)) column-hints))
+
     (setq max-row-hint (--max-by (> (length it) (length other)) row-strings))
+    (setq max-column-hint (--max-by (> (length it) (length other)) column-strings))
 
     (while (>= (setq j (1- j)) 0)
       (insert (format (format "%%%ds" (length max-row-hint)) (nth j row-strings)))
@@ -76,7 +86,7 @@
       (if (eq j 0)
           ()
         (insert "\n")))
-    (list max-row-hint max-column-hint)))
+    (list (length max-row-hint) (length max-column-hint))))
 
 (defun nonogram-generate-points (num-points)
   "Fill the board with initial points.
@@ -104,6 +114,20 @@ NUM-POINTS: the number of points on the board"
       (setq nonogram-errors (1+ nonogram-errors))))
   (backward-char))
 
+(defun nonogram-hint-from-points (points)
+  "Create a hint given a series of numbers.
+POINTS: list of numbers representing rows or columns containing points."
+  (if (not points)
+      nil
+    (let ((previous-value (car points)) (hint '(1)))
+      (while points
+        (if (= (car points) (1+ previous-value))
+            (setcar hint (1+ (car hint)))
+          (setq hint (cons 1 hint)))
+        (setq previous-value (car points))
+        (setq points (cdr points)))
+      (reverse (butlast hint)))))
+
 (defun nonogram-generate-hint (row-or-column number)
   "Generate a string representing the points on the given row.
 ROW-OR-COLUMN: whether the hint should be build by row or column
@@ -111,9 +135,7 @@ NUMBER: which row or column to use"
   (let ((filter-func nil)
         (value-func nil)
         (points nil)
-        (values nil)
-        (previous-value nil)
-        (hints nil))
+        (values nil))
     (if (eq row-or-column 'column)
         (setq filter-func 'car
               value-func 'cdr)
@@ -125,15 +147,7 @@ NUMBER: which row or column to use"
                           nonogram-points))
 
     (setq values (sort (-map value-func points) '<))
-    (while values
-      (if (not previous-value)
-          (setq hints '(1))
-        (if (eq (car values) (1+ previous-value))
-            (setcar hints (1+ (car hints)))
-          (setq hints (append hints '(1)))))
-      (setq previous-value (car values))
-      (setq values (cdr values)))
-    hints))
+    (nonogram-hint-from-points values)))
 
 (defun nonogram-right ()
   "Move nonogram cursor right."
@@ -182,6 +196,7 @@ NUMBER: which row or column to use"
   "Move nonogram cursor to the beginning of the line."
   (interactive)
   (beginning-of-line)
+  (forward-char nonogram-start-pos)
   (setq nonogram-pos-x 1))
 
 (defun nonogram-start ()
@@ -189,14 +204,22 @@ NUMBER: which row or column to use"
   (switch-to-buffer "*nonogram*")
   (nonogram-mode)
   (nonogram-generate-points nonogram-columns)
-  (nonogram-draw-board)
+  (setq nonogram-start-pos (nonogram-draw-board))
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
-  (with-no-warnings (beginning-of-buffer)))
+  (with-no-warnings (beginning-of-buffer))
+  (forward-char (car nonogram-start-pos)))
 
 (defun nonogram ()
   "Play a game of nonogram."
   (interactive)
+  (setq nonogram-pos-x -1)
+  (setq nonogram-pos-y -1)
+  (setq nonogram-rows 10)
+  (setq nonogram-columns 10)
+  (setq nonogram-errors 0)
+  (setq nonogram-max-erros 5)
+  (setq nonogram-points nil)
   (nonogram-start))
 
 (defvar nonogram-mode-map nil)
@@ -215,7 +238,9 @@ NUMBER: which row or column to use"
 
 (define-derived-mode nonogram-mode special-mode "nonogram"
   "A mode for playing nonogram."
+  (kill-all-local-variables)
   (use-local-map nonogram-mode-map)
   (setf show-trailing-whitespace nil))
 
+(provide 'nonogram)
 ;;; nonogram.el ends here
