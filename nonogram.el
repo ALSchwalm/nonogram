@@ -43,18 +43,23 @@
 (make-variable-buffer-local 'nonogram-max-errors)
 (make-variable-buffer-local 'nonogram-start-pos)
 
-(defun nonogram-draw-column-hints ()
-  "Draw the hints for the current game."
-
-  (-dotimes (length max-column-hint)
-    (lambda (row)
-      (-dotimes nonogram-columns
-        (lambda (column)
-          (if (nth row (nth column column-hints))
-              (insert (concat (number-to-string (nth row
-                                                     (nth column column-hints))) " "))
-            (insert "  "))))
-      (next-line))))
+(defun nonogram-draw-column-hints (column-hints max-column-hint-length)
+  "Draw the hints for the current game.
+COLUMN-HINTS: List of column hints
+MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
+  (let (column-hint)
+   (-dotimes max-column-hint-length
+     (lambda (row)
+       (-dotimes nonogram-columns
+         (lambda (column)
+           (setq column-hint (nth column column-hints))
+           (while (< (length column-hint) max-column-hint-length)
+             (setq column-hint (cons nil column-hint)))
+           (if (nth row column-hint)
+               (insert (concat (number-to-string
+                                (nth row column-hint)) " "))
+             (insert "  "))))
+       (next-line)))))
 
 (defun nonogram-draw-board ()
   "Draw the board on which the game will be played."
@@ -81,8 +86,6 @@
                                  ""
                                (substring (format "%s" it) 1 -1)) row-hints))
 
-
-
     (setq max-row-hint (--max-by (> (length it) (length other)) row-strings))
     (setq max-column-hint (--max-by (> (length it) (length other)) column-hints))
 
@@ -90,7 +93,7 @@
       (insert (concat (make-string (length max-row-hint) ? ) "\n")))
     (backward-char)
     (previous-line (1- (length max-column-hint)))
-    (nonogram-draw-column-hints)
+    (nonogram-draw-column-hints (reverse column-hints) (length max-column-hint))
 
     (while (>= (setq j (1- j)) 0)
       (insert (format (format "%%%ds" (length max-row-hint))
@@ -213,7 +216,7 @@ NUMBER: which row or column to use"
   "Move nonogram cursor to the beginning of the line."
   (interactive)
   (beginning-of-line)
-  (forward-char nonogram-start-pos)
+  (forward-char (car nonogram-start-pos))
   (setq nonogram-pos-x 1))
 
 (defun nonogram-start ()
