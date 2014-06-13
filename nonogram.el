@@ -69,8 +69,8 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
         (buffer-read-only nil)
         (column-hints ())
         (row-hints ())
-        (max-row-hint 0)
-        (max-column-hint 0)
+        (max-row-hint-length 0)
+        (max-column-hint-length 0)
         (row-strings nil)
         (column-strings nil))
 
@@ -86,17 +86,20 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
                                  ""
                                (substring (format "%s" it) 1 -1)) row-hints))
 
-    (setq max-row-hint (--max-by (> (length it) (length other)) row-strings))
-    (setq max-column-hint (--max-by (> (length it) (length other)) column-hints))
+    (setq max-row-hint-length (length (--max-by (> (length it)
+                                                   (length other)) row-strings)))
 
-    (--dotimes (length max-column-hint)
-      (insert (concat (make-string (length max-row-hint) ? ) "\n")))
+    (setq max-column-hint-length (length (--max-by (> (length it)
+                                                      (length other)) column-hints)))
+
+    (--dotimes max-column-hint-length
+      (insert (concat (make-string (1+ max-row-hint-length) ? ) "\n")))
     (backward-char)
-    (previous-line (1- (length max-column-hint)))
-    (nonogram-draw-column-hints (reverse column-hints) (length max-column-hint))
+    (previous-line (1- max-column-hint-length))
+    (nonogram-draw-column-hints (reverse column-hints) max-column-hint-length)
 
     (while (>= (setq j (1- j)) 0)
-      (insert (format (format "%%%ds" (length max-row-hint))
+      (insert (format (format "%%%ds " max-row-hint-length)
                       (nth j row-strings)))
       (while (>= (setq i (1- i)) 0)
         (if (eq i 0)
@@ -106,7 +109,7 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
       (if (eq j 0)
           ()
         (insert "\n")))
-    (list (length max-row-hint) (length max-column-hint))))
+    (list (1+ max-row-hint-length) max-column-hint-length)))
 
 (defun nonogram-generate-points (num-points)
   "Fill the board with initial points.
@@ -223,7 +226,7 @@ NUMBER: which row or column to use"
   "Initialize a buffer for nonogram play."
   (switch-to-buffer "*nonogram*")
   (nonogram-mode)
-  (nonogram-generate-points (* nonogram-columns 4))
+  (nonogram-generate-points (floor (* nonogram-columns nonogram-rows 0.5)))
   (setq nonogram-start-pos (nonogram-draw-board))
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
@@ -232,7 +235,7 @@ NUMBER: which row or column to use"
   (next-line (cadr nonogram-start-pos)))
 
 (defun nonogram ()
-  "Play a game of nonogram."
+  "Solve a nonogram."
   (interactive)
   (setq nonogram-pos-x -1)
   (setq nonogram-pos-y -1)
@@ -258,7 +261,7 @@ NUMBER: which row or column to use"
   (define-key nonogram-mode-map "q" 'bury-buffer))
 
 (define-derived-mode nonogram-mode special-mode "nonogram"
-  "A mode for playing nonogram."
+  "A mode for solving nonogram puzzles."
   (kill-all-local-variables)
   (use-local-map nonogram-mode-map)
   (setf show-trailing-whitespace nil))
