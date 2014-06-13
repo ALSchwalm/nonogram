@@ -69,10 +69,10 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
         (buffer-read-only nil)
         (column-hints ())
         (row-hints ())
-        (max-row-hint-length 0)
-        (max-column-hint-length 0)
-        (row-strings nil)
-        (column-strings nil))
+        max-row-hint-length
+        max-column-hint-length
+        row-strings
+        column-strings)
 
     (-dotimes nonogram-columns
       (lambda (n) (setq column-hints (cons (nonogram-generate-hint 'column (1+ n))
@@ -127,15 +127,29 @@ NUM-POINTS: the number of points on the board"
 (defun nonogram-select ()
   "Select the current location as a point."
   (interactive)
-  (let ((point (cons nonogram-pos-x nonogram-pos-y))
-        (buffer-read-only nil))
-    (if (member point nonogram-points)
-        (progn (delete-char 1) (insert "0"))
-      (message "Incorrect")
-      (delete-char 1)
-      (insert "X")
-      (setq nonogram-errors (1+ nonogram-errors))))
-  (backward-char))
+  (if (eq (following-char) ?-)
+   (let ((point (cons nonogram-pos-x nonogram-pos-y))
+         (buffer-read-only nil))
+     (if (member point nonogram-points)
+         (progn (delete-char 1) (insert "0"))
+       (message "Incorrect")
+       (delete-char 1)
+       (insert "X")
+       (setq nonogram-errors (1+ nonogram-errors)))
+     (backward-char))))
+
+(defun nonogram-mark-empty ()
+  "Mark the current location as empty."
+  (interactive)
+  (let ((buffer-read-only nil))
+   (cond ((eq (following-char) ?-)
+          (delete-char 1)
+          (insert "x")
+          (backward-char))
+         ((eq (following-char) ?x)
+          (delete-char 1)
+          (insert "-")
+          (backward-char)))))
 
 (defun nonogram-hint-from-points (points)
   "Create a hint given a series of numbers.
@@ -155,10 +169,7 @@ POINTS: list of numbers representing rows or columns containing points."
   "Generate a string representing the points on the given row.
 ROW-OR-COLUMN: whether the hint should be build by row or column
 NUMBER: which row or column to use"
-  (let ((filter-func nil)
-        (value-func nil)
-        (points nil)
-        (values nil))
+  (let (filter-func value-func points values)
     (if (eq row-or-column 'column)
         (setq filter-func 'car
               value-func 'cdr)
@@ -258,6 +269,7 @@ NUMBER: which row or column to use"
   (define-key nonogram-mode-map "\C-e" 'nonogram-eol)
   (define-key nonogram-mode-map "\C-a" 'nonogram-bol)
   (define-key nonogram-mode-map " " 'nonogram-select)
+  (define-key nonogram-mode-map "j" 'nonogram-mark-empty)
   (define-key nonogram-mode-map "q" 'bury-buffer))
 
 (define-derived-mode nonogram-mode special-mode "nonogram"
