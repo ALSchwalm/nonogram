@@ -150,7 +150,9 @@ NUM-POINTS: the number of points on the board"
                 ((eq (following-char) ?x)
                  (delete-char 1)
                  (insert "-")))
-        (replace-regexp "-" "x" nil (region-beginning) (region-end))))))
+        (if (> (count-matches "-" (region-beginning) (1+ (region-end))) 0)
+            (replace-regexp "-" "x" nil (region-beginning) (1+ (region-end)))
+          (replace-regexp "x" "-" nil (region-beginning) (1+ (region-end))))))))
 
 (defun nonogram-hint-from-points (points)
   "Create a hint given a series of numbers.
