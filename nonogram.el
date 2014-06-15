@@ -19,29 +19,58 @@
 
 ;;; Commentary:
 
+;; Nonograms are a type of logic puzzle in which numeric clues must be used
+;; to determine which of a grid of boxes should be 'filled'.
+
+;; For example, consider the following puzzle:
+;;                 2   2
+;;               2 1 1 1 3
+;;             1 - - - - -
+;;           1 1 - - - - -
+;;           1 2 - - - - -
+;;           2 1 - - - - -
+;;             3 - - - - -
+
+;; The dashes constitute the grid mentioned above.  Each row of numbers to the
+;; left of the grid is a hint for solving that row of the grid.  Similarly, each
+;; column of numbers above the grid is a hint for solving the corresponding grid
+;; column.  The hints may be interpreted in the following way:
+
+;; Each number indicates a grouping of filled boxes in the row or column.  If there
+;; are multiple numbers, then there are multiple groupings of filled boxes separated
+;; by at least one empty box.  So for example, the hint for the first row in the
+;; above puzzle is '1'.  Which means there is a group of exactly one filled box
+;; in that row of the grid.  More concisely, there is one filled box somewhere on
+;; that row.  The hint for the next row (1 1), indicates that there are two filled
+;; boxes on that row with at least one space between them.
+
+;; By examining the clues for each row and column, it may be determined that the
+;; solution to the above puzzle is:
+
+;;                 2   2
+;;               2 1 1 1 3
+;;             1 x 0 x x x
+;;           1 1 x 0 x 0 x
+;;           1 2 0 x x 0 0
+;;           2 1 0 0 x x 0
+;;             3 x x 0 0 0
+
+;; Where '0' represents a filled box and 'x' represents an empty box.
+
 ;; Based on: blackbox.el
 
 ;;; Code:
 
 (require 'dash)
 
-(defvar nonogram-rows 10)
-(defvar nonogram-columns 10)
+(defvar nonogram-rows 5)
+(defvar nonogram-columns 5)
 (defvar nonogram-errors 0)
 (defvar nonogram-max-erros 5)
 (defvar nonogram-pos-x -1)
 (defvar nonogram-pos-y -1)
 (defvar nonogram-start-pos '(-1 -1))
 (defvar nonogram-points nil)
-
-(make-variable-buffer-local 'nonogram-rows)
-(make-variable-buffer-local 'nonogram-columns)
-(make-variable-buffer-local 'nonogram-errors)
-(make-variable-buffer-local 'nonogram-pos-x)
-(make-variable-buffer-local 'nonogram-pox-y)
-(make-variable-buffer-local 'nonogram-points)
-(make-variable-buffer-local 'nonogram-max-errors)
-(make-variable-buffer-local 'nonogram-start-pos)
 
 (defun nonogram-draw-column-hints (column-hints max-column-hint-length)
   "Draw the hints for the current game.
@@ -63,7 +92,6 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
 
 (defun nonogram-draw-board ()
   "Draw the board on which the game will be played."
-  (erase-buffer)
   (let ((i nonogram-columns)
         (j nonogram-rows)
         (buffer-read-only nil)
@@ -73,7 +101,7 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
         max-column-hint-length
         row-strings
         column-strings)
-
+    (erase-buffer)
     (-dotimes nonogram-columns
       (lambda (n) (setq column-hints (cons (nonogram-generate-hint 'column (1+ n))
                                       column-hints))))
@@ -82,9 +110,8 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
       (lambda (n) (setq row-hints (cons (nonogram-generate-hint 'row (1+ n))
                                         row-hints))))
 
-    (setq row-strings (--map (if (not it)
-                                 ""
-                               (substring (format "%s" it) 1 -1)) row-hints))
+    (setq row-strings (--map (if it (substring (format "%s" it) 1 -1)
+                               "") row-hints))
 
     (setq max-row-hint-length (length (--max-by (> (length it)
                                                    (length other)) row-strings)))
@@ -242,19 +269,21 @@ NUMBER: which row or column to use"
   (nonogram-mode)
   (nonogram-generate-points (floor (* nonogram-columns nonogram-rows 0.5)))
   (setq nonogram-start-pos (nonogram-draw-board))
-  (setq nonogram-pos-x 1)
-  (setq nonogram-pos-y 1)
   (with-no-warnings (beginning-of-buffer))
   (forward-char (car nonogram-start-pos))
   (next-line (cadr nonogram-start-pos)))
 
-(defun nonogram ()
-  "Solve a nonogram."
+(defun nonogram (&optional rows columns)
+  "Solve a nonogram.
+ROWS: Number of rows in the generated puzzle
+COLUMNS: Number of columns in the generated puzzle"
   (interactive)
-  (setq nonogram-pos-x -1)
-  (setq nonogram-pos-y -1)
-  (setq nonogram-rows 10)
-  (setq nonogram-columns 10)
+  (if rows (setq nonogram-rows rows)
+    (setq nonogram-rows 10))
+  (if columns (setq nonogram-columns columns)
+    (setq nonogram-columns 10))
+  (setq nonogram-pos-x 1)
+  (setq nonogram-pos-y 1)
   (setq nonogram-errors 0)
   (setq nonogram-max-erros 5)
   (setq nonogram-points nil)
