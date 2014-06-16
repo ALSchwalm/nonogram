@@ -266,6 +266,8 @@ NUMBER: which row or column to use"
 (defun nonogram-start ()
   "Initialize a buffer for nonogram play."
   (switch-to-buffer "*nonogram*")
+  (setq buffer-read-only t)
+  (buffer-disable-undo (current-buffer))
   (nonogram-mode)
   (nonogram-generate-points (floor (* nonogram-columns nonogram-rows 0.5)))
   (setq nonogram-start-pos (nonogram-draw-board))
@@ -278,10 +280,8 @@ NUMBER: which row or column to use"
 ROWS: Number of rows in the generated puzzle
 COLUMNS: Number of columns in the generated puzzle"
   (interactive)
-  (if rows (setq nonogram-rows rows)
-    (setq nonogram-rows 10))
-  (if columns (setq nonogram-columns columns)
-    (setq nonogram-columns 10))
+  (setq nonogram-rows (or rows 10))
+  (setq nonogram-columns (or columns 10))
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
   (setq nonogram-errors 0)
