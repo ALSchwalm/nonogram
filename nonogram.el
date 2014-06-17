@@ -163,7 +163,8 @@ NUM-POINTS: the number of points on the board"
         (message "Incorrect")
         (delete-char 1)
         (insert "X")
-        (setq nonogram-errors (1+ nonogram-errors)))))))
+        (setq nonogram-errors (1+ nonogram-errors))
+        (nonogram-update-score))))))
 
 (defun nonogram-mark-empty ()
   "Mark the current location as empty."
@@ -212,6 +213,14 @@ NUMBER: which row or column to use"
 
     (setq values (sort (-map value-func points) '<))
     (nonogram-hint-from-points values)))
+
+(defun nonogram-update-score ()
+  "Update the displayed score (number of mistakes)."
+  (let ((buffer-read-only nil))
+    (with-no-warnings (end-of-buffer))
+    (beginning-of-line)
+    (kill-line)
+    (insert (format "   Errors: %d/%d" nonogram-errors nonogram-max-erros))))
 
 (defun nonogram-right ()
   "Move nonogram cursor right."
@@ -270,7 +279,11 @@ NUMBER: which row or column to use"
   (buffer-disable-undo (current-buffer))
   (nonogram-mode)
   (nonogram-generate-points (floor (* nonogram-columns nonogram-rows 0.5)))
-  (setq nonogram-start-pos (nonogram-draw-board))
+  (let ((buffer-read-only nil))
+    (setq nonogram-start-pos (nonogram-draw-board))
+    (with-no-warnings (end-of-buffer))
+    (newline 3)
+    (insert (format "   Errors: %d/%d" nonogram-errors nonogram-max-erros)))
   (with-no-warnings (beginning-of-buffer))
   (forward-char (car nonogram-start-pos))
   (next-line (cadr nonogram-start-pos)))
