@@ -65,6 +65,7 @@
 
 (defvar nonogram-rows 5)
 (defvar nonogram-columns 5)
+(defvar nonogram-correct 0)
 (defvar nonogram-errors 0)
 (defvar nonogram-max-erros 5)
 (defvar nonogram-pos-x -1)
@@ -159,12 +160,29 @@ NUM-POINTS: the number of points on the board"
          (buffer-read-only nil))
      (save-excursion
       (if (member point nonogram-points)
-          (progn (delete-char 1) (insert "0"))
+          (progn
+            (delete-char 1)
+            (insert "0")
+            (setq nonogram-correct (1+ nonogram-correct))
+            (if (eq nonogram-correct (length nonogram-points))
+                (nonogram-game-over 'win)))
         (message "Incorrect")
         (delete-char 1)
         (insert "X")
         (setq nonogram-errors (1+ nonogram-errors))
-        (nonogram-update-score))))))
+        (nonogram-update-score)
+        (if (eq nonogram-errors nonogram-max-erros)
+            (nonogram-game-over 'lose)))))))
+
+(defun nonogram-game-over (win-or-lose)
+  "End the current game and display score.
+WIN-OR-LOSE: whether the player has won or lost"
+  (let ((buffer-read-only nil))
+    (if (eq win-or-lose 'win)
+        (message "Game over. Nice job!")
+      (message "Game over. Better luck next time."))
+    (setq nonogram-pos-x -1)
+    (setq nonogram-pos-y -1)))
 
 (defun nonogram-mark-empty ()
   "Mark the current location as empty."
@@ -261,16 +279,20 @@ NUMBER: which row or column to use"
 (defun nonogram-eol ()
   "Move nonogram cursor to the end of the line."
   (interactive)
-  (end-of-line)
-  (backward-char 1)
-  (setq nonogram-pos-x nonogram-columns))
+  (if (eq nonogram-pos-x -1)
+      ()
+    (end-of-line)
+    (backward-char 1)
+    (setq nonogram-pos-x nonogram-columns)))
 
 (defun nonogram-bol ()
   "Move nonogram cursor to the beginning of the line."
   (interactive)
+  (if (eq nonogram-pos-x -1)
+      ()
   (beginning-of-line)
   (forward-char (car nonogram-start-pos))
-  (setq nonogram-pos-x 1))
+  (setq nonogram-pos-x 1)))
 
 (defun nonogram-start ()
   "Initialize a buffer for nonogram play."
@@ -298,6 +320,7 @@ COLUMNS: Number of columns in the generated puzzle"
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
   (setq nonogram-errors 0)
+  (setq nonogram-correct 0)
   (setq nonogram-max-erros 5)
   (setq nonogram-points nil)
   (nonogram-start))
