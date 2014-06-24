@@ -184,6 +184,29 @@ WIN-OR-LOSE: whether the player has won or lost"
     (setq nonogram-pos-x -1)
     (setq nonogram-pos-y -1)))
 
+(defun nonogram-reveal-board ()
+  "Reveal the hidden board state to the player."
+  (let ((buffer-read-only nil))
+    (beginning-of-buffer)
+    (next-line (cadr nonogram-start-pos))
+    (forward-char (car nonogram-start-pos))
+    (setq nonogram-pos-x 1)
+    (setq nonogram-pos-y 1)
+
+    (-dotimes nonogram-rows
+      (lambda (count)
+        (-dotimes nonogram-columns
+                   (lambda (count)
+                     (if (member (cons nonogram-pos-x nonogram-pos-y)
+                                 nonogram-points)
+                         (progn (delete-char 1) (insert "0"))
+                       (delete-char 1)
+                       (insert "x"))
+                     (backward-char)
+                     (nonogram-right)))
+        (nonogram-down)
+        (nonogram-bol)))))
+
 (defun nonogram-mark-empty ()
   "Mark the current location as empty."
   (interactive)
