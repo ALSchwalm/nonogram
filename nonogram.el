@@ -174,6 +174,12 @@ NUM-POINTS: the number of points on the board"
         (if (eq nonogram-errors nonogram-max-erros)
             (nonogram-game-over 'lose)))))))
 
+(defun nonogram-give-up ()
+  "Give up and reveal the board."
+  (interactive)
+  (nonogram-reveal-board)
+  (nonogram-game-over 'lose))
+
 (defun nonogram-game-over (win-or-lose)
   "End the current game and display score.
 WIN-OR-LOSE: whether the player has won or lost"
@@ -354,14 +360,20 @@ COLUMNS: Number of columns in the generated puzzle"
   (setq nonogram-mode-map (make-keymap))
   (suppress-keymap nonogram-mode-map t)
   (define-key nonogram-mode-map "\C-f" 'nonogram-right)
+  (define-key nonogram-mode-map [right] 'nonogram-right)
   (define-key nonogram-mode-map "\C-b" 'nonogram-left)
+  (define-key nonogram-mode-map [left] 'nonogram-left)
   (define-key nonogram-mode-map "\C-p" 'nonogram-up)
+  (define-key nonogram-mode-map [up] 'nonogram-up)
   (define-key nonogram-mode-map "\C-n" 'nonogram-down)
+  (define-key nonogram-mode-map [down] 'nonogram-down)
   (define-key nonogram-mode-map "\C-e" 'nonogram-eol)
   (define-key nonogram-mode-map "\C-a" 'nonogram-bol)
   (define-key nonogram-mode-map " " 'nonogram-select)
-  (define-key nonogram-mode-map "j" 'nonogram-mark-empty)
-  (define-key nonogram-mode-map "q" 'bury-buffer))
+  (define-key nonogram-mode-map "f" 'nonogram-mark-empty)
+  (define-key nonogram-mode-map "q" 'bury-buffer)
+  (define-key nonogram-mode-map "\C-r" 'nonogram-give-up)
+  (define-key nonogram-mode-map "r" 'nonogram))
 
 (define-derived-mode nonogram-mode special-mode "nonogram"
   "A mode for solving nonogram puzzles."
