@@ -78,18 +78,18 @@
 COLUMN-HINTS: List of column hints
 MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
   (let (column-hint)
-   (-dotimes max-column-hint-length
-     (lambda (row)
-       (-dotimes nonogram-columns
-         (lambda (column)
-           (setq column-hint (nth column column-hints))
-           (while (< (length column-hint) max-column-hint-length)
-             (setq column-hint (cons nil column-hint)))
-           (if (nth row column-hint)
-               (insert (concat (number-to-string
-                                (nth row column-hint)) " "))
-             (insert "  "))))
-       (next-line)))))
+    (-dotimes max-column-hint-length
+      (lambda (row)
+        (-dotimes nonogram-columns
+          (lambda (column)
+            (setq column-hint (nth column column-hints))
+            (while (< (length column-hint) max-column-hint-length)
+              (setq column-hint (cons nil column-hint)))
+            (if (nth row column-hint)
+                (insert (concat (number-to-string
+                                 (nth row column-hint)) " "))
+              (insert "  "))))
+        (next-line)))))
 
 (defun nonogram-draw-board ()
   "Draw the board on which the game will be played."
@@ -105,7 +105,7 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
     (erase-buffer)
     (-dotimes nonogram-columns
       (lambda (n) (setq column-hints (cons (nonogram-generate-hint 'column (1+ n))
-                                      column-hints))))
+                                           column-hints))))
 
     (-dotimes nonogram-rows
       (lambda (n) (setq row-hints (cons (nonogram-generate-hint 'row (1+ n))
@@ -144,11 +144,10 @@ MAX-COLUMN-HINT-LENGTH: Length of the longest column hint"
 NUM-POINTS: the number of points on the board"
   (let (point)
     (while (>= (setq num-points (1- num-points)) 0)
-      (while
-          (progn
-            (setq point (cons (1+ (random nonogram-columns))
-                              (1+ (random nonogram-rows))))
-            (member point nonogram-points)))
+      (while (progn
+               (setq point (cons (1+ (random nonogram-columns))
+                                 (1+ (random nonogram-rows))))
+               (member point nonogram-points)))
       (setq nonogram-points (cons point nonogram-points)))
     nonogram-points))
 
@@ -156,23 +155,23 @@ NUM-POINTS: the number of points on the board"
   "Select the current location as a point."
   (interactive)
   (if (eq (following-char) ?-)
-   (let ((point (cons nonogram-pos-x nonogram-pos-y))
-         (buffer-read-only nil))
-     (save-excursion
-      (if (member point nonogram-points)
-          (progn
+      (let ((point (cons nonogram-pos-x nonogram-pos-y))
+            (buffer-read-only nil))
+        (save-excursion
+          (if (member point nonogram-points)
+              (progn
+                (delete-char 1)
+                (insert "0")
+                (setq nonogram-correct (1+ nonogram-correct))
+                (if (eq nonogram-correct (length nonogram-points))
+                    (nonogram-game-over 'win)))
+            (message "Incorrect")
             (delete-char 1)
-            (insert "0")
-            (setq nonogram-correct (1+ nonogram-correct))
-            (if (eq nonogram-correct (length nonogram-points))
-                (nonogram-game-over 'win)))
-        (message "Incorrect")
-        (delete-char 1)
-        (insert "X")
-        (setq nonogram-errors (1+ nonogram-errors))
-        (nonogram-update-score)
-        (if (eq nonogram-errors nonogram-max-erros)
-            (nonogram-game-over 'lose)))))))
+            (insert "X")
+            (setq nonogram-errors (1+ nonogram-errors))
+            (nonogram-update-score)
+            (if (eq nonogram-errors nonogram-max-erros)
+                (nonogram-game-over 'lose)))))))
 
 (defun nonogram-give-up ()
   "Give up and reveal the board."
@@ -202,14 +201,14 @@ WIN-OR-LOSE: whether the player has won or lost"
     (-dotimes nonogram-rows
       (lambda (count)
         (-dotimes nonogram-columns
-                   (lambda (count)
-                     (if (member (cons nonogram-pos-x nonogram-pos-y)
-                                 nonogram-points)
-                         (progn (delete-char 1) (insert "0"))
-                       (delete-char 1)
-                       (insert "x"))
-                     (backward-char)
-                     (nonogram-right)))
+          (lambda (count)
+            (if (member (cons nonogram-pos-x nonogram-pos-y)
+                        nonogram-points)
+                (progn (delete-char 1) (insert "0"))
+              (delete-char 1)
+              (insert "x"))
+            (backward-char)
+            (nonogram-right)))
         (nonogram-down)
         (nonogram-bol)))))
 
@@ -272,44 +271,39 @@ NUMBER: which row or column to use"
 (defun nonogram-right ()
   "Move nonogram cursor right."
   (interactive)
-  (if (or (eq nonogram-pos-x -1)
-          (eq nonogram-pos-x nonogram-columns))
-      ()
+  (when (not (or (eq nonogram-pos-x -1)
+                 (eq nonogram-pos-x nonogram-columns)))
     (forward-char 2)
     (setq nonogram-pos-x (1+ nonogram-pos-x))))
 
 (defun nonogram-left ()
   "Move nonogram cursor left."
   (interactive)
-  (if (or (eq nonogram-pos-x -1)
-          (eq nonogram-pos-x 1))
-      ()
+  (when (not (or (eq nonogram-pos-x -1)
+                 (eq nonogram-pos-x 1)))
     (backward-char 2)
     (setq nonogram-pos-x (1- nonogram-pos-x))))
 
 (defun nonogram-up ()
   "Move nonogram cursor up."
   (interactive)
-  (if (or  (eq nonogram-pos-y -1)
-           (eq nonogram-pos-y 1))
-      ()
+  (when (not (or (eq nonogram-pos-y -1)
+                 (eq nonogram-pos-y 1)))
     (with-no-warnings (previous-line))
     (setq nonogram-pos-y (1- nonogram-pos-y))))
 
 (defun nonogram-down ()
   "Move nonogram cursor down."
   (interactive)
-  (if (or (eq nonogram-pos-y -1)
-          (eq nonogram-pos-y nonogram-rows))
-      ()
+  (when (not (or (eq nonogram-pos-y -1)
+                 (eq nonogram-pos-y nonogram-rows)))
     (with-no-warnings (next-line))
     (setq nonogram-pos-y (1+ nonogram-pos-y))))
 
 (defun nonogram-eol ()
   "Move nonogram cursor to the end of the line."
   (interactive)
-  (if (eq nonogram-pos-x -1)
-      ()
+  (when (not (eq nonogram-pos-x -1))
     (end-of-line)
     (backward-char 1)
     (setq nonogram-pos-x nonogram-columns)))
@@ -317,11 +311,10 @@ NUMBER: which row or column to use"
 (defun nonogram-bol ()
   "Move nonogram cursor to the beginning of the line."
   (interactive)
-  (if (eq nonogram-pos-x -1)
-      ()
-  (beginning-of-line)
-  (forward-char (car nonogram-start-pos))
-  (setq nonogram-pos-x 1)))
+  (when (not (eq nonogram-pos-x -1))
+    (beginning-of-line)
+    (forward-char (car nonogram-start-pos))
+    (setq nonogram-pos-x 1)))
 
 (defun nonogram-start ()
   "Initialize a buffer for nonogram play."
@@ -348,6 +341,7 @@ COLUMNS: Number of columns in the generated puzzle"
   (setq nonogram-columns (or columns 10))
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
+  (setq nonogram-start-pos '(-1 -1))
   (setq nonogram-errors 0)
   (setq nonogram-correct 0)
   (setq nonogram-max-erros 5)
