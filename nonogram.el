@@ -276,7 +276,7 @@ NUMBER: which row or column to use"
     (save-excursion
       (nonogram-bol)
       (--dotimes nonogram-columns
-        (progn (nonogram-mark-empty)
+        (progn (nonogram-mark-empty 'notoggle)
                (nonogram-right 1))))))
 
 (defun nonogram-mark-column-empty ()
@@ -286,7 +286,7 @@ NUMBER: which row or column to use"
     (save-excursion
       (nonogram-up nonogram-rows)
       (--dotimes nonogram-rows
-        (progn (nonogram-mark-empty)
+        (progn (nonogram-mark-empty 'notoggle)
                (nonogram-down 1))))))
 
 (defun nonogram-right (&optional N)
@@ -390,6 +390,8 @@ COLUMNS: Number of columns in the generated puzzle"
   (define-key nonogram-mode-map "\C-a" 'nonogram-bol)
   (define-key nonogram-mode-map " " 'nonogram-select)
   (define-key nonogram-mode-map "f" 'nonogram-mark-empty)
+  (define-key nonogram-mode-map "F" 'nonogram-mark-row-empty)
+  (define-key nonogram-mode-map "\M-f" 'nonogram-mark-column-empty)
   (define-key nonogram-mode-map "q" 'bury-buffer)
   (define-key nonogram-mode-map "\C-r" 'nonogram-give-up)
   (define-key nonogram-mode-map "r" 'nonogram))
