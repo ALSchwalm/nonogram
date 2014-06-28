@@ -217,7 +217,9 @@ WIN-OR-LOSE: whether the player has won or lost"
 With 'NOTOGGLE' only mark the space as empty, instead of toggling."
   (interactive "p")
   (save-excursion
-    (let ((buffer-read-only nil))
+    (let ((buffer-read-only nil)
+          (case-fold-search nil))
+
       (if (not (region-active-p))
           (cond ((eq (following-char) ?-)
                  (delete-char 1)
@@ -275,55 +277,69 @@ NUMBER: which row or column to use"
   (let ((nonogram-pos-x nonogram-pos-x))
     (save-excursion
       (nonogram-bol)
-      (--dotimes nonogram-columns
-        (progn (nonogram-mark-empty 'notoggle)
-               (nonogram-right 1))))))
+      (set-mark (point))
+      (nonogram-eol)
+      (nonogram-mark-empty))))
 
 (defun nonogram-mark-column-empty ()
   "Mark the current column empty."
   (interactive)
-  (let ((nonogram-pos-y nonogram-pos-y))
+  (let ((nonogram-pos-y nonogram-pos-y)
+        (do-mark-empty nil))
     (save-excursion
       (nonogram-up nonogram-rows)
       (--dotimes nonogram-rows
-        (progn (nonogram-mark-empty 'notoggle)
-               (nonogram-down 1))))))
+        (progn
+          (if (eq (following-char) ?-)
+             (setq do-mark-empty t))
+          (nonogram-down)))
+      (nonogram-up nonogram-rows)
+      (--dotimes nonogram-rows
+        (progn
+          (if do-mark-empty
+             (nonogram-mark-empty 'notoggle)
+           (nonogram-mark-empty))
+          (nonogram-down))))))
 
 (defun nonogram-right (&optional N)
   "Move nonogram cursor N spaces right."
   (interactive "p")
-  (while (and (>= (setq N (1- N)) 0)
-              (not (or (eq nonogram-pos-x -1)
-                       (eq nonogram-pos-x nonogram-columns))))
-    (forward-char 2)
-    (setq nonogram-pos-x (1+ nonogram-pos-x))))
+  (let ((N (if N N 1)))
+   (while (and (>= (setq N (1- N)) 0)
+               (not (or (eq nonogram-pos-x -1)
+                        (eq nonogram-pos-x nonogram-columns))))
+     (forward-char 2)
+     (setq nonogram-pos-x (1+ nonogram-pos-x)))))
 
 (defun nonogram-left (&optional N)
   "Move nonogram cursor N spaces left."
   (interactive "p")
-  (while (and (>= (setq N (1- N)) 0)
-              (not (or (eq nonogram-pos-x -1)
-                       (eq nonogram-pos-x 1))))
-    (backward-char 2)
-    (setq nonogram-pos-x (1- nonogram-pos-x))))
+  (let ((N (if N N 1)))
+    (while (and (>= (setq N (1- N)) 0)
+                (not (or (eq nonogram-pos-x -1)
+                         (eq nonogram-pos-x 1))))
+      (backward-char 2)
+      (setq nonogram-pos-x (1- nonogram-pos-x)))))
 
 (defun nonogram-up (&optional N)
   "Move nonogram cursor N spaces up."
   (interactive "p")
-  (while (and (>= (setq N (1- N)) 0)
-              (not (or (eq nonogram-pos-y -1)
-                       (eq nonogram-pos-y 1))))
-    (with-no-warnings (previous-line))
-    (setq nonogram-pos-y (1- nonogram-pos-y))))
+  (let ((N (if N N 1)))
+    (while (and (>= (setq N (1- N)) 0)
+                (not (or (eq nonogram-pos-y -1)
+                         (eq nonogram-pos-y 1))))
+      (with-no-warnings (previous-line))
+      (setq nonogram-pos-y (1- nonogram-pos-y)))))
 
 (defun nonogram-down (&optional N)
   "Move nonogram cursor N spaces down."
   (interactive "p")
-  (while (and (>= (setq N (1- N)) 0)
-              (not (or (eq nonogram-pos-y -1)
-                       (eq nonogram-pos-y nonogram-rows))))
-    (with-no-warnings (next-line))
-    (setq nonogram-pos-y (1+ nonogram-pos-y))))
+  (let ((N (if N N 1)))
+    (while (and (>= (setq N (1- N)) 0)
+                (not (or (eq nonogram-pos-y -1)
+                         (eq nonogram-pos-y nonogram-rows))))
+      (with-no-warnings (next-line))
+      (setq nonogram-pos-y (1+ nonogram-pos-y)))))
 
 (defun nonogram-eol ()
   "Move nonogram cursor to the end of the line."
