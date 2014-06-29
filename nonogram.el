@@ -228,8 +228,8 @@ With 'NOTOGGLE' only mark the space as empty, instead of toggling."
                  (delete-char 1)
                  (insert "-")))
         (if (> (count-matches "-" (region-beginning) (1+ (region-end))) 0)
-            (replace-regexp "-" "x" nil (region-beginning) (1+ (region-end)))
-          (replace-regexp "x" "-" nil (region-beginning) (1+ (region-end))))))))
+            (replace-string "-" "x" nil (region-beginning) (1+ (region-end)))
+          (replace-string "x" "-" nil (region-beginning) (1+ (region-end))))))))
 
 (defun nonogram-hint-from-points (points)
   "Create a hint given a series of numbers.
