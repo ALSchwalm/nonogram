@@ -218,7 +218,8 @@ With 'NOTOGGLE' only mark the space as empty, instead of toggling."
   (interactive "p")
   (save-excursion
     (let ((buffer-read-only nil)
-          (case-fold-search nil))
+          (case-fold-search nil)
+          (notoggle (if notoggle notoggle nil)))
 
       (if (not (region-active-p))
           (cond ((eq (following-char) ?-)
@@ -344,7 +345,7 @@ NUMBER: which row or column to use"
 (defun nonogram-eol ()
   "Move nonogram cursor to the end of the line."
   (interactive)
-  (when (not (eq nonogram-pos-x -1))
+  (unless (eq nonogram-pos-x -1)
     (end-of-line)
     (backward-char 1)
     (setq nonogram-pos-x nonogram-columns)))
@@ -352,7 +353,7 @@ NUMBER: which row or column to use"
 (defun nonogram-bol ()
   "Move nonogram cursor to the beginning of the line."
   (interactive)
-  (when (not (eq nonogram-pos-x -1))
+  (unless (eq nonogram-pos-x -1)
     (beginning-of-line)
     (forward-char (car nonogram-start-pos))
     (setq nonogram-pos-x 1)))
@@ -374,12 +375,53 @@ NUMBER: which row or column to use"
   (next-line (cadr nonogram-start-pos)))
 
 (defun nonogram (&optional rows columns)
-  "Solve a nonogram.
+  "Generate a nonogram.
 ROWS: Number of rows in the generated puzzle
-COLUMNS: Number of columns in the generated puzzle"
+COLUMNS: Number of columns in the generated puzzle
+
+Nonograms are a type of logic puzzle in which numeric clues must be used
+to determine which of a grid of boxes should be 'filled'.
+
+For example, consider the following puzzle:
+                2   2
+              2 1 1 1 3
+            1 - - - - -
+          1 1 - - - - -
+          1 2 - - - - -
+          2 1 - - - - -
+            3 - - - - -
+
+The dashes constitute the grid mentioned above.  Each row of numbers to the
+left of the grid is a hint for solving that row of the grid.  Similarly, each
+column of numbers above the grid is a hint for solving the corresponding grid
+column.  The hints may be interpreted in the following way:
+ Each number indicates a grouping of filled boxes in the row or column.  If
+there are multiple numbers, then there are multiple groupings of filled boxes
+separated by at least one empty box.  So for example, the hint for the first
+row in the above puzzle is '1'.  Which means there is a group of exactly one
+filled box in that row of the grid.  More concisely, there is one filled box
+somewhere on that row.  The hint for the next row (1 1), indicates that there
+are two filled boxes on that row with at least one space between them.
+
+By examining the clues for each row and column, it may be determined that the
+solution to the above puzzle is:
+
+                2   2
+              2 1 1 1 3
+            1 x 0 x x x
+          1 1 x 0 x 0 x
+          1 2 0 x x 0 0
+          2 1 0 0 x x 0
+            3 x x 0 0 0
+
+Where '0' represents a filled box and 'x' represents an empty box."
   (interactive)
-  (setq nonogram-rows (or rows 10))
-  (setq nonogram-columns (or columns 10))
+  (if (eq major-mode 'nonogram-mode)
+      (setq nonogram-rows (or rows nonogram-rows))
+    (setq nonogram-rows (or rows 10)))
+  (if (eq major-mode 'nonogram-mode)
+      (setq nonogram-columns (or rows nonogram-columns))
+    (setq nonogram-columns (or rows 10)))
   (setq nonogram-pos-x 1)
   (setq nonogram-pos-y 1)
   (setq nonogram-start-pos '(-1 -1))
@@ -390,8 +432,7 @@ COLUMNS: Number of columns in the generated puzzle"
   (nonogram-start))
 
 (defvar nonogram-mode-map nil)
-(if nonogram-mode-map
-    ()
+(unless nonogram-mode-map
   (setq nonogram-mode-map (make-keymap))
   (suppress-keymap nonogram-mode-map t)
   (define-key nonogram-mode-map "\C-f" 'nonogram-right)
@@ -413,9 +454,12 @@ COLUMNS: Number of columns in the generated puzzle"
   (define-key nonogram-mode-map "r" 'nonogram))
 
 (define-derived-mode nonogram-mode special-mode "nonogram"
-  "A mode for solving nonogram puzzles."
+  "A mode for solving nonogram puzzles.
+\\{nonogram-mode-map}"
   (kill-all-local-variables)
   (use-local-map nonogram-mode-map)
+  (setq major-mode 'nonogram-mode)
+  (setq mode-name "Nonogram")
   (setf show-trailing-whitespace nil))
 
 (provide 'nonogram)
