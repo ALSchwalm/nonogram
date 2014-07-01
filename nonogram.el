@@ -215,12 +215,11 @@ WIN-OR-LOSE: whether the player has won or lost"
 (defun nonogram-mark-empty (&optional notoggle)
   "Mark the current location as empty.
 With 'NOTOGGLE' only mark the space as empty, instead of toggling."
-  (interactive "p")
+  (interactive)
   (save-excursion
     (let ((buffer-read-only nil)
           (case-fold-search nil)
           (notoggle (if notoggle notoggle nil)))
-
       (if (not (region-active-p))
           (cond ((eq (following-char) ?-)
                  (delete-char 1)
@@ -453,7 +452,7 @@ Where '0' represents a filled box and 'x' represents an empty box."
   (define-key nonogram-mode-map "\C-r" 'nonogram-give-up)
   (define-key nonogram-mode-map "r" 'nonogram))
 
-(define-derived-mode nonogram-mode special-mode "nonogram"
+(define-derived-mode nonogram-mode nil "nonogram"
   "A mode for solving nonogram puzzles.
 \\{nonogram-mode-map}"
   (kill-all-local-variables)
