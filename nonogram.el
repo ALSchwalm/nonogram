@@ -72,6 +72,7 @@
 (defvar nonogram-pos-y -1)
 (defvar nonogram-start-pos '(-1 -1))
 (defvar nonogram-points nil)
+(defvar nonogram-game-over nil)
 
 (defun nonogram-draw-column-hints (column-hints max-column-hint-length)
   "Draw the hints for the current game.
@@ -182,18 +183,22 @@ NUM-POINTS: the number of points on the board"
 (defun nonogram-game-over (win-or-lose)
   "End the current game and display score.
 WIN-OR-LOSE: whether the player has won or lost"
-  (let ((buffer-read-only nil))
-    (if (eq win-or-lose 'win)
-        (message "Game over. Nice job!")
-      (message "Game over. Better luck next time."))
-    (setq nonogram-pos-x -1)
-    (setq nonogram-pos-y -1)))
+  (unless nonogram-game-over
+    (setq nonogram-game-over win-or-lose)
+    (let ((buffer-read-only nil))
+      (end-of-buffer)
+      (newline)
+      (if (eq win-or-lose 'win)
+          (insert "   Game over. Nice job!")
+        (insert "   Game over. Better luck next time."))
+      (setq nonogram-pos-x -1)
+      (setq nonogram-pos-y -1))))
 
 (defun nonogram-reveal-board ()
   "Reveal the hidden board state to the player."
   (let ((buffer-read-only nil))
     (beginning-of-buffer)
-    (next-line (cadr nonogram-start-pos))
+    (forward-line (cadr nonogram-start-pos))
     (forward-char (car nonogram-start-pos))
     (setq nonogram-pos-x 1)
     (setq nonogram-pos-y 1)
@@ -428,6 +433,7 @@ Where '0' represents a filled box and 'x' represents an empty box."
   (setq nonogram-correct 0)
   (setq nonogram-max-erros 5)
   (setq nonogram-points nil)
+  (setq nonogram-game-over nil)
   (nonogram-start))
 
 (defvar nonogram-mode-map nil)
